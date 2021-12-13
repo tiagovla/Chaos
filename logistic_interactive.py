@@ -11,9 +11,16 @@
 """
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QApplication, QHBoxLayout,
-                             QLabel, QSizePolicy, QSlider, QSpacerItem,
-                             QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QSlider,
+    QSpacerItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 import pyqtgraph as pg
@@ -27,32 +34,32 @@ import sys
 from time import time
 import types
 
-colors =  {
-            'lightest':"#eeeeee",
-            'lighter':"#e5e5e5",
-            'light':"#effffb",
-            'himid':"#50d890",
-            'midmid':"#1089ff",
-            'lomid':"#4f98ca",
-            'dark' :"#272727",
-            'darker' :"#23374d",
+colors = {
+    "lightest": "#eeeeee",
+    "lighter": "#e5e5e5",
+    "light": "#effffb",
+    "himid": "#50d890",
+    "midmid": "#1089ff",
+    "lomid": "#4f98ca",
+    "dark": "#272727",
+    "darker": "#23374d",
 }
 
 numlabelsize = 22
 txtlabelsize = 20
 
 # STYLING
-numfont = QtGui.QFont("Avenir Next") # requires macos
+numfont = QtGui.QFont("Avenir Next")  # requires macos
 numfont.setPixelSize(numlabelsize)
 
-txtfont = QtGui.QFont("Avenir Next") # requires macos
+txtfont = QtGui.QFont("Avenir Next")  # requires macos
 txtfont.setPixelSize(txtlabelsize)
 
-brushes = { k: pg.mkBrush(c) for k, c in colors.items() }
+brushes = {k: pg.mkBrush(c) for k, c in colors.items()}
 
 pg.setConfigOptions(antialias=True)
-pg.setConfigOption('background', colors['dark'])
-pg.setConfigOption('foreground', colors['light'])
+pg.setConfigOption("background", colors["dark"])
+pg.setConfigOption("foreground", colors["light"])
 
 QPushButton_style = f"""
 QPushButton{{
@@ -86,33 +93,35 @@ QCheckBox{{
 }}
 """
 
-def custom_axis_item_resizeEvent(self, ev=None):
-    """ custom implementation of AxisItem.resizeEvent to control `nudge`
 
-        this overwrites the instance method for `AxisItem`
+def custom_axis_item_resizeEvent(self, ev=None):
+    """custom implementation of AxisItem.resizeEvent to control `nudge`
+
+    this overwrites the instance method for `AxisItem`
     """
 
-    #s = self.size()
+    # s = self.size()
 
     ## Set the position of the label
     nudge = 15
 
     br = self.label.boundingRect()
     p = QtCore.QPointF(0, 0)
-    if self.orientation == 'left':
-        p.setY(int(self.size().height()/2 + br.width()/2))
+    if self.orientation == "left":
+        p.setY(int(self.size().height() / 2 + br.width() / 2))
         p.setX(-nudge)
-    elif self.orientation == 'right':
-        p.setY(int(self.size().height()/2 + br.width()/2))
-        p.setX(int(self.size().width()-br.height()+nudge))
-    elif self.orientation == 'top':
+    elif self.orientation == "right":
+        p.setY(int(self.size().height() / 2 + br.width() / 2))
+        p.setX(int(self.size().width() - br.height() + nudge))
+    elif self.orientation == "top":
         p.setY(-nudge)
-        p.setX(int(self.size().width()/2. - br.width()/2.))
-    elif self.orientation == 'bottom':
-        p.setX(int(self.size().width()/2. - br.width()/2.))
-        p.setY(int(self.size().height()-br.height()+nudge))
+        p.setX(int(self.size().width() / 2.0 - br.width() / 2.0))
+    elif self.orientation == "bottom":
+        p.setX(int(self.size().width() / 2.0 - br.width() / 2.0))
+        p.setY(int(self.size().height() - br.height() + nudge))
     self.label.setPos(p)
     self.picture = None
+
 
 @njit
 def linear_interp(x, in_min, in_max, out_min, out_max, lim=True, dec=None):
@@ -130,8 +139,9 @@ def linear_interp(x, in_min, in_max, out_min, out_max, lim=True, dec=None):
 
         return y
 
-@jit(cache=True, nopython=True) # pragma: no cover
-def logistic_map(pop, rate):
+
+@jit(cache=True, nopython=True)  # pragma: no cover
+def logistic_map(pop, rate, n=1):
     """
     From pynamical `https://github.com/gboeing/pynamical`
     Define the equation for the logistic map.
@@ -148,9 +158,10 @@ def logistic_map(pop, rate):
     float
         scalar result of logistic map at time t+1
     """
+    for i in range(n):
+        pop = pop * rate * (1 - pop)
 
-    return pop * rate * (1 - pop)
-
+    return pop
 
 
 def get_function_points(model, r, n, start, end):
@@ -180,6 +191,7 @@ def get_function_points(model, r, n, start, end):
     x_vals = np.linspace(start, end, n)
     y_vals = [model(x, r) for x in x_vals]
     return x_vals, y_vals
+
 
 def get_cobweb_points(model, r, x, n):
     """
@@ -221,67 +233,92 @@ def get_cobweb_points(model, r, x, n):
         x = y1
     return zip(*cobweb_points)
 
-def cobweb_plot(plt, idx=-1,
-                model=logistic_map, r=0, cobweb_x=0.5,
 
-                function_n=1000,
-
-                cobweb_n=100, num_discard=0,
-                title='', filename='', show=True, save=True,
-                start=0, end=1, figsize=(6,6), diagonal_linewidth=1.35,
-                cobweb_linewidth=1, function_linewidth=1.5,
-                folder='images', dpi=300, bbox_inches='tight', pad=0.1):
+def cobweb_plot(
+    plt,
+    idx=-1,
+    model=logistic_map,
+    r=0,
+    cobweb_x=0.5,
+    function_n=1000,
+    cobweb_n=100,
+    num_discard=0,
+    title="",
+    filename="",
+    show=True,
+    save=True,
+    start=0,
+    end=1,
+    figsize=(6, 6),
+    diagonal_linewidth=1.35,
+    cobweb_linewidth=1,
+    function_linewidth=1.5,
+    folder="images",
+    dpi=300,
+    bbox_inches="tight",
+    pad=0.1,
+):
 
     plt.clear()
 
     initial_pop = float(cobweb_x)
 
-    stride_idx = (idx-1)*3
+    stride_idx = (idx - 1) * 3
 
     func_x_vals, func_y_vals = get_function_points(
-                        model=model, r=r, n=function_n, start=start, end=end)
+        model=model, r=r, n=function_n, start=start, end=end
+    )
     cobweb_x_vals, cobweb_y_vals = get_cobweb_points(
-                        model=model, r=r, x=cobweb_x, n=cobweb_n)
+        model=model, r=r, x=cobweb_x, n=cobweb_n
+    )
 
     cobweb_x_vals = cobweb_x_vals[:stride_idx]
     cobweb_y_vals = cobweb_y_vals[:stride_idx]
 
     plt.setTitle(f"Cobweb Plot")
 
-    diagonal_line = plt.plot((0,1), (0,1))
+    diagonal_line = plt.plot((0, 1), (0, 1))
     diagonal_line.setPen(width=diagonal_linewidth)
 
     function_line = pg.PlotDataItem(x=func_x_vals, y=func_y_vals)
-    function_line.setPen(color=colors['lomid'], width=3.0)
+    function_line.setPen(color=colors["lomid"], width=3.0)
     function_line = plt.addItem(function_line)
 
-    sizes = 1/np.linspace(.1,1,len(cobweb_x_vals))
+    sizes = 1 / np.linspace(0.1, 1, len(cobweb_x_vals))
     sizes = np.maximum(5, sizes)
 
-    cobweb_line = plt.plot(cobweb_x_vals, cobweb_y_vals, symbol='o', symbolSize=sizes)
-    cobweb_line.setPen(color=colors['lomid'], width=cobweb_linewidth)
-    cobweb_line.setSymbolPen(color=(1,1,1,0), width=0.0)
-    cobweb_line.setSymbolBrush(color=colors['himid'])
+    cobweb_line = plt.plot(cobweb_x_vals, cobweb_y_vals, symbol="o", symbolSize=sizes)
+    cobweb_line.setPen(color=colors["lomid"], width=cobweb_linewidth)
+    cobweb_line.setSymbolPen(color=(1, 1, 1, 0), width=0.0)
+    cobweb_line.setSymbolBrush(color=colors["himid"])
 
     xaxis = plt.getAxis("bottom")
-    #xaxis.setTickSpacing(4,4)
+    # xaxis.setTickSpacing(4,4)
 
     xaxis.tickFont = numfont
-    xaxis.setStyle(tickTextOffset = 20)
+    xaxis.setStyle(tickTextOffset=20)
 
     yaxis = plt.getAxis("left")
-    #yaxis.setTickSpacing(.2, .2)
+    # yaxis.setTickSpacing(.2, .2)
 
     yaxis.resizeEvent = types.MethodType(custom_axis_item_resizeEvent, yaxis)
 
     yaxis.tickFont = numfont
-    yaxis.setStyle(tickTextOffset = 10, tickLength=10)
+    yaxis.setStyle(tickTextOffset=10, tickLength=10)
 
     xaxis.label.setFont(txtfont)
     yaxis.label.setFont(txtfont)
     plt.titleLabel.item.setFont(txtfont)
 
-    return np.concatenate(([initial_pop,], np.array(cobweb_y_vals[1::3])))
+    return np.concatenate(
+        (
+            [
+                initial_pop,
+            ],
+            np.array(cobweb_y_vals[1::3]),
+        )
+    )
+
 
 def series_plot(plt, y_vals, idx=100, r=0, xall=False):
 
@@ -293,44 +330,45 @@ def series_plot(plt, y_vals, idx=100, r=0, xall=False):
     t = t[:idx]
 
     if len(t) < 20:
-        plt.setXRange(*[0,20])
+        plt.setXRange(*[0, 20])
     else:
         if not xall:
-            plt.setXRange(*[len(t)-20, len(t)])
+            plt.setXRange(*[len(t) - 20, len(t)])
         else:
             plt.setXRange(*[0, 30])
 
-    plt.setYRange(*[0,1])
+    plt.setYRange(*[0, 1])
     plt.showGrid(x=True, y=True)
 
-    s = 20/len(t)
-    s = max(10,s)
+    s = 20 / len(t)
+    s = max(10, s)
 
     line = plt.plot(x=t, y=y)
-    line.setPen(color=colors['lomid'], width=3.0)
+    line.setPen(color=colors["lomid"], width=3.0)
 
-    scat = pg.ScatterPlotItem(x=t, y=y, size=s, name='series')
-    scat.setPen(color=(1,1,1,0), width=0.0)
-    scat.setBrush(color=colors['himid'])
+    scat = pg.ScatterPlotItem(x=t, y=y, size=s, name="series")
+    scat.setPen(color=(1, 1, 1, 0), width=0.0)
+    scat.setBrush(color=colors["himid"])
     plt.addItem(scat)
 
     xaxis = plt.getAxis("bottom")
-    #xaxis.setTickSpacing(4,4)
+    # xaxis.setTickSpacing(4,4)
 
     xaxis.tickFont = numfont
-    xaxis.setStyle(tickTextOffset = 20)
+    xaxis.setStyle(tickTextOffset=20)
 
     yaxis = plt.getAxis("left")
-    #yaxis.setTickSpacing(.2, .2)
+    # yaxis.setTickSpacing(.2, .2)
 
     yaxis.resizeEvent = types.MethodType(custom_axis_item_resizeEvent, yaxis)
 
     yaxis.tickFont = numfont
-    yaxis.setStyle(tickTextOffset = 10, tickLength=10)
+    yaxis.setStyle(tickTextOffset=10, tickLength=10)
 
     xaxis.label.setFont(txtfont)
     yaxis.label.setFont(txtfont)
     plt.titleLabel.item.setFont(txtfont)
+
 
 def bifurc_plot(plt, y_vals, r=0, ipop=0.5, discard=64):
 
@@ -338,30 +376,32 @@ def bifurc_plot(plt, y_vals, r=0, ipop=0.5, discard=64):
         return
 
     ys = y_vals[discard:]
-    xs = np.repeat(r,len(ys))
+    xs = np.repeat(r, len(ys))
     s = 1
     new_s = 5
 
     if len(plt.items) == 0:
         # __init__
-        bifurcation = pg.ScatterPlotItem(x=xs, y=ys, size=new_s, antialias=True, name='bifurc')
-        bifurcation.setBrush(color=colors['himid'], alpha=0.5, width=1)
-        bifurcation.setPen(color=(0,0,0,0), width=0, alpha=0.5)
+        bifurcation = pg.ScatterPlotItem(
+            x=xs, y=ys, size=new_s, antialias=True, name="bifurc"
+        )
+        bifurcation.setBrush(color=colors["himid"], alpha=0.5, width=1)
+        bifurcation.setPen(color=(0, 0, 0, 0), width=0, alpha=0.5)
         plt.addItem(bifurcation)
 
         plt.titleLabel.item.setFont(txtfont)
 
         xaxis = plt.getAxis("bottom")
-        xaxis.setTickSpacing(1, .5)
+        xaxis.setTickSpacing(1, 0.5)
 
         xaxis.tickFont = numfont
-        xaxis.setStyle(tickTextOffset = 20)
+        xaxis.setStyle(tickTextOffset=20)
 
         yaxis = plt.getAxis("left")
-        #yaxis.setTickSpacing(.2, .2)
+        # yaxis.setTickSpacing(.2, .2)
 
         yaxis.tickFont = numfont
-        yaxis.setStyle(tickTextOffset = 10, tickLength=10)
+        yaxis.setStyle(tickTextOffset=10, tickLength=10)
 
         xaxis.label.setFont(txtfont)
         yaxis.label.setFont(txtfont)
@@ -372,29 +412,30 @@ def bifurc_plot(plt, y_vals, r=0, ipop=0.5, discard=64):
 
         n_new = len(xs)
 
-        xs = np.concatenate((xs, bifurcation.data['x']))
-        ys = np.concatenate((ys, bifurcation.data['y']))
+        xs = np.concatenate((xs, bifurcation.data["x"]))
+        ys = np.concatenate((ys, bifurcation.data["y"]))
 
-        ss = np.repeat(1,len(xs))
+        ss = np.repeat(1, len(xs))
         ss[0:n_new] = new_s
 
-        bs = [brushes['lomid'] for b in range(len(xs))]
-        bs[0:n_new] = [brushes['himid'] for _ in range(n_new)]
+        bs = [brushes["lomid"] for b in range(len(xs))]
+        bs[0:n_new] = [brushes["himid"] for _ in range(n_new)]
 
-        bifurcation.setData(xs,ys, size=ss, brush=bs)
+        bifurcation.setData(xs, ys, size=ss, brush=bs)
 
-    plt.setXRange(*[0,4])
-    plt.setYRange(*[0,1])
+    plt.setXRange(*[0, 4])
+    plt.setYRange(*[0, 1])
+
 
 class Controls(QWidget):
-    def __init__(self, variable='', parent=None):
+    def __init__(self, variable="", parent=None):
         super(Controls, self).__init__(parent=parent)
         self.verticalLayout = QVBoxLayout(self)
 
         self.l1 = QVBoxLayout()
         self.l1.setAlignment(Qt.AlignTop)
 
-        self.cobweb_box = QtWidgets.QCheckBox('🕸️ Plot', parent=self)
+        self.cobweb_box = QtWidgets.QCheckBox("🕸️ Plot", parent=self)
         self.l1.addWidget(self.cobweb_box)
         self.cobweb_box.setChecked(0)
 
@@ -408,7 +449,7 @@ class Controls(QWidget):
 
         self.verticalLayout.addLayout(self.l1)
 
-        self.l2 =  QVBoxLayout()
+        self.l2 = QVBoxLayout()
         self.l2.setAlignment(Qt.AlignTop)
 
         self.animlabel = QLabel(self)
@@ -422,7 +463,27 @@ class Controls(QWidget):
 
         self.verticalLayout.addLayout(self.l2)
 
-        self.l3 =  QVBoxLayout()
+        ##
+        self.lorder = QVBoxLayout()
+        self.lorder.setAlignment(Qt.AlignTop)
+
+        self.suborder = QHBoxLayout()
+        self.suborder.setAlignment(Qt.AlignLeft)
+        self.order_txt = QLabel("Order", self)
+
+        self.order_box = QtWidgets.QDoubleSpinBox(self)
+        self.order_box.setSingleStep(1)
+        self.order_box.setDecimals(0)
+
+        self.suborder.addWidget(self.order_txt)
+        self.suborder.addWidget(self.order_box)
+
+        self.lorder.addLayout(self.suborder)
+
+        self.verticalLayout.addLayout(self.lorder)
+        ##
+
+        self.l3 = QVBoxLayout()
         self.l3.setAlignment(Qt.AlignTop)
 
         self.sub1 = QHBoxLayout()
@@ -430,7 +491,7 @@ class Controls(QWidget):
         self.rate_txt = QLabel("Rate", self)
 
         self.rate_box = QtWidgets.QDoubleSpinBox(self)
-        self.rate_box.setSingleStep(0.01)
+        self.rate_box.setSingleStep(0.001)
         self.rate_box.setDecimals(2)
 
         self.sub1.addWidget(self.rate_txt)
@@ -444,7 +505,8 @@ class Controls(QWidget):
 
         self.verticalLayout.addLayout(self.l3)
 
-        self.l4 =  QVBoxLayout()
+
+        self.l4 = QVBoxLayout()
         self.l4.setAlignment(Qt.AlignTop)
 
         self.sub2 = QHBoxLayout()
@@ -468,33 +530,32 @@ class Controls(QWidget):
         self.l4.addWidget(self.ipop)
         self.ipop.setValue(50)
 
-
-
         self.verticalLayout.addLayout(self.l4)
 
         self.resize(self.sizeHint())
 
         self.setFixedWidth(self.animrate.width() + 20)
 
-        self.rate.valueChanged.connect(lambda: self.setValues('rate_slider'))
-        self.rate_box.valueChanged.connect(lambda: self.setValues('rate_box'))
-        self.ipop.valueChanged.connect(lambda: self.setValues('ipop_slider'))
-        self.ipop_box.valueChanged.connect(lambda: self.setValues('ipop_box'))
+        self.rate.valueChanged.connect(lambda: self.setValues("rate_slider"))
+        self.rate_box.valueChanged.connect(lambda: self.setValues("rate_box"))
+        self.order_box.valueChanged.connect(lambda: self.setValues("order_box"))
+        self.ipop.valueChanged.connect(lambda: self.setValues("ipop_slider"))
+        self.ipop_box.valueChanged.connect(lambda: self.setValues("ipop_box"))
 
         self.rateval = None
 
-        self.l5 =  QVBoxLayout()
+        self.l5 = QVBoxLayout()
         self.l5.setAlignment(Qt.AlignTop)
 
-        self.animb = QtWidgets.QPushButton('Play', parent=self)
+        self.animb = QtWidgets.QPushButton("Play", parent=self)
         self.l5.addWidget(self.animb)
         self.animb.setFixedWidth(self.animlabel.width())
 
-        self.reset = QtWidgets.QPushButton('Reset', parent=self)
+        self.reset = QtWidgets.QPushButton("Reset", parent=self)
         self.l5.addWidget(self.reset)
         self.reset.setFixedWidth(self.animlabel.width())
 
-        self.clear = QtWidgets.QPushButton('Clear', parent=self)
+        self.clear = QtWidgets.QPushButton("Clear", parent=self)
         self.clear.setCheckable(False)
         self.clear.setFixedWidth(self.animlabel.width())
         self.l5.addWidget(self.clear)
@@ -508,6 +569,7 @@ class Controls(QWidget):
 
         self.animlabel.setStyleSheet(QLabel_style)
         self.rate_txt.setStyleSheet(QLabel_style)
+        self.order_txt.setStyleSheet(QLabel_style)
         self.ipoptxt.setStyleSheet(QLabel_style)
 
         self.cobweb_box.setStyleSheet(QCheckBox_style)
@@ -517,48 +579,55 @@ class Controls(QWidget):
     def resizeEvent(self, event):
         super(Controls, self).resizeEvent(event)
 
-    def setValues(self, kind=''):
+    def setValues(self, kind=""):
 
-        if kind == 'rate_slider':
-            self.rateval = linear_interp(self.rate.value(),
-                                            0, 99, 0, 3.99, lim=1, dec=2)
+        if kind == "rate_slider":
+            self.rateval = linear_interp(
+                self.rate.value(), 0, 99, 0, 3.99, lim=1, dec=2
+            )
             self.rate_box.blockSignals(True)
             self.rate_box.setValue(self.rateval)
             self.rate_box.blockSignals(False)
 
-        elif kind == 'rate_box':
-            self.rateval = linear_interp(self.rate_box.value(),
-                                            0, 3.99, 0, 3.99, lim=1, dec=2)
+        elif kind == "rate_box":
+            self.rateval = linear_interp(
+                self.rate_box.value(), 0, 3.999, 0, 3.999, lim=1, dec=3
+            )
             self.rate.blockSignals(True)
-            self.rate.setValue( linear_interp(self.rateval,
-                                            0, 3.99, 0, 99, lim=1, dec=2) )
+            self.rate.setValue(
+                linear_interp(self.rateval, 0, 3.999, 0, 99, lim=1, dec=3)
+            )
             self.rate.blockSignals(False)
 
-        elif kind == 'ipop_slider':
-            self.ipopval = linear_interp(self.ipop.value(),
-                                            0, 100, 0, 1, lim=1)
-
+        elif kind == "ipop_slider":
+            self.ipopval = linear_interp(self.ipop.value(), 0, 100, 0, 1, lim=1)
 
             self.ipop_box.blockSignals(True)
             self.ipop_box.setValue(self.ipopval)
             self.ipop_box.blockSignals(False)
 
-
-        elif kind == 'ipop_box':
+        elif kind == "ipop_box":
             self.ipopval = self.ipop_box.value()
 
             self.ipop.blockSignals(True)
-            self.ipop.setValue( linear_interp(self.ipopval,
-                                            0, 1, 0, 100, lim=1) )
+            self.ipop.setValue(linear_interp(self.ipopval, 0, 1, 0, 100, lim=1))
             self.ipop.blockSignals(False)
 
+        elif kind == "order_box":
+            self.orderval = int(self.order_box.value())
+
+            self.order_box.blockSignals(True)
+            self.order_box.setValue(linear_interp(self.orderval, 1, 10, 1, 10))
+            self.order_box.blockSignals(False)
 
         else:
             # defaults
             self.rate_box.setValue(1.0)
             self.ipop_box.setValue(0.5)
-            self.setValues('rate_box')
-            self.setValues('ipop_box')
+            self.order_box.setValue(0.5)
+            self.setValues("rate_box")
+            self.setValues("ipop_box")
+            self.setValues("order_box")
 
 
 class Widget(QWidget):
@@ -581,17 +650,21 @@ class Widget(QWidget):
         self.horizontalLayout.addWidget(self.win)
 
         self.plots = [
-                        self.win.addPlot(col=1, title="Cobwebb",
-                                        labels={'left':"Population Next",
-                                                'bottom':"Population"}),
-
-                        self.win.addPlot(col=2, title="Population vs Time",
-                                        labels={'left':"Population",
-                                                'bottom':"Time"}),
-
-                        self.win.addPlot(col=3, title="Bifurcations",
-                                        labels={'left':"Equilibrium Population",
-                                                'bottom':"Rates"}),
+            self.win.addPlot(
+                col=1,
+                title="Cobwebb",
+                labels={"left": "Population Next", "bottom": "Population"},
+            ),
+            self.win.addPlot(
+                col=2,
+                title="Population vs Time",
+                labels={"left": "Population", "bottom": "Time"},
+            ),
+            self.win.addPlot(
+                col=3,
+                title="Bifurcations",
+                labels={"left": "Equilibrium Population", "bottom": "Rates"},
+            ),
         ]
 
         self.timer = QtCore.QTimer()
@@ -603,6 +676,7 @@ class Widget(QWidget):
 
         self.controls.rate.valueChanged.connect(self.update_plot)
         self.controls.rate_box.valueChanged.connect(self.update_plot)
+        self.controls.order_box.valueChanged.connect(self.update_plot)
         self.controls.ipop.valueChanged.connect(self.update_plot)
         self.controls.cobweb_box.stateChanged.connect(self.update_plot)
         self.controls.series_box.stateChanged.connect(self.update_plot)
@@ -612,13 +686,13 @@ class Widget(QWidget):
         self.controls.animb.pressed.connect(self.animate_toggle)
 
     def clear(self):
-        print('Clear')
+        print("Clear")
         for p in self.plots:
             p.clear()
         self.update_plot()
 
     def reset(self):
-        print('Reset')
+        print("Reset")
         self.animate = False
         self.timer.stop()
         self.f = 0
@@ -629,20 +703,20 @@ class Widget(QWidget):
         self.animate = not self.animate
 
         if self.animate:
-            print('Animation play')
+            print("Animation play")
             self.update_plot()
-            self.controls.animb.setText('Pause')
+            self.controls.animb.setText("Pause")
         else:
             print("Animation pause")
             self.timer.stop()
-            self.controls.animb.setText('Play')
+            self.controls.animb.setText("Play")
 
     def keyPressEvent(self, event):
 
-        if event.key() == 32: # Space
+        if event.key() == 32:  # Space
             self.animate_toggle()
 
-        elif event.key() == 16777219: # Backspace
+        elif event.key() == 16777219:  # Backspace
             self.reset()
 
         else:
@@ -654,7 +728,7 @@ class Widget(QWidget):
             # start animate
             self.animspeed = self.controls.animrate.value()
             self.animspeed = max(1, self.animspeed)
-            self.animspeed = 1000/self.animspeed # sec/frame -> frames/msec
+            self.animspeed = 1000 / self.animspeed  # sec/frame -> frames/msec
 
             self.f = 0
             self.fmax = 100
@@ -667,7 +741,7 @@ class Widget(QWidget):
             # continue animate
             self.animspeed = self.controls.animrate.value()
             self.animspeed = max(1, self.animspeed)
-            self.animspeed = 1000/self.animspeed
+            self.animspeed = 1000 / self.animspeed
 
             self.timer.start(self.animspeed)
 
@@ -677,12 +751,15 @@ class Widget(QWidget):
 
     def redraw_plots(self, index=0):
 
-        """ redraw plots ; controlled by checkmarks """
+        """redraw plots ; controlled by checkmarks"""
 
         rate = self.controls.rateval
         ipop = self.controls.ipopval
+        order = self.controls.orderval
 
-        y_vals = cobweb_plot(self.plots[0], idx=0, r=rate, cobweb_x=ipop)
+
+        model = lambda a,b: logistic_map(a,b,order)
+        y_vals = cobweb_plot(self.plots[0], model=model, idx=0, r=rate, cobweb_x=ipop)
 
         if self.controls.cobweb_box.isChecked():
             self.plots[0].setVisible(True)
@@ -705,8 +782,11 @@ class Widget(QWidget):
 
         rate = self.controls.rateval
         ipop = self.controls.ipopval
+        order = self.controls.orderval
 
-        y_vals = cobweb_plot(self.plots[0], idx=1 + self.f, r=rate, cobweb_x=ipop)
+
+        model = lambda a,b: logistic_map(a,b,order)
+        y_vals = cobweb_plot(self.plots[0], model=model, idx=1 + self.f, r=rate, cobweb_x=ipop)
 
         if self.controls.cobweb_box.isChecked():
             self.plots[0].setVisible(True)
@@ -715,7 +795,7 @@ class Widget(QWidget):
 
         if self.controls.series_box.isChecked():
             self.plots[1].setVisible(True)
-            series_plot(self.plots[1], y_vals, idx =1 + self.f, r=rate)
+            series_plot(self.plots[1], y_vals, idx=1 + self.f, r=rate)
         else:
             self.plots[1].setVisible(False)
 
@@ -729,6 +809,7 @@ class Widget(QWidget):
 
         if self.f >= self.fmax:
             self.timer.stop()
+
     """
     def resizeEvent(self, event):
 
@@ -741,7 +822,8 @@ class Widget(QWidget):
         self.blockSignals(False)
     """
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = Widget(app)
     w.show()
